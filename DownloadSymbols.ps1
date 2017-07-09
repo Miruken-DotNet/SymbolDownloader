@@ -9,6 +9,7 @@ function Unzip
 function Download($uri, $outputFile)
 {
     Write-Output "Downloading: $uri"
+    Write-Output "To:          $name"
     Invoke-WebRequest -Uri $uri -OutFile $outputFile
 }
 
@@ -40,10 +41,22 @@ function DownloadPackages
     }
 }
 
+function DownloadPackage($symbolFolder, $packageName, $version)
+{
+    $directory = "$symbolFolder/packages/$packageName/$version"
+    CreateDirectory $directory
+    
+    $zip      = "$directory/$packageName.zip" 
+    $unzipped = "$directory/$packageName" 
+
+    $uri = "https://www.nuget.org/api/v2/package/$packageName/$version"
+    Download $uri $zip
+    Unzip    $zip $unzipped
+
+}
+
 function GetVersion
 {
-    Unzip "Miruken.zip" "Miruken"
-
     $headers = dumpbin /headers .\Miruken\lib\net461\Miruken.dll
     $line = $headers -match '{'
     $line[0] -match '(?<={)(.*)(?=})'
@@ -107,11 +120,14 @@ function DownloadSourceFile($symbolFolder, $filePath, $hash)
 
 function Work(){
     $symbolFolder = "C:/temp/symbols7"
-    $assemblyName = "Miruken"
-    $version      = "42AF557992974F988C23152957E8DE781"
+    $packageName  = "Miruken"
+    $version      = "1.4.0.3"
     
-    DownloadPdb         $symbolFolder $assemblyName $version
-    DownloadSourceFiles $symbolFolder $assemblyName $version
+    $hash = DownloadPackage $symbolFolder $packageName $version 
+
+    $hash         = "42AF557992974F988C23152957E8DE781"
+    #DownloadPdb         $symbolFolder $packageName $hash
+    #DownloadSourceFiles $symbolFolder $packageName $hash
 }
 
 Work
