@@ -121,7 +121,7 @@ function DownloadSourceFile($symbolFolder, $filePath, $hash)
     Download $uri "$directory/$file"
 }
 
-function Work(){
+function DowloadSymbols($packageName, $version){
     $symbolFolder = "C:/temp/symbols7"
     $packageName  = "Miruken"
     $version      = "1.4.0.3"
@@ -132,4 +132,5 @@ function Work(){
     DownloadSourceFiles $symbolFolder $packageName $hash
 }
 
-Work
+
+Export-ModuleMember -Cmdlet DownloadSymbols
