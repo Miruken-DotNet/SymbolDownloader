@@ -1,15 +1,14 @@
 ﻿Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-function Unzip
+function Unzip($zipFile, $unzipFile)
 {
-    param([string]$zipfile, [string]$outpath)
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($(Convert-Path $zipfile), "$(Convert-Path(".\"))\$outpath")
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $unzipFile)
 }
 
 function Download($uri, $outputFile)
 {
-    Write-Output "Downloading: $uri"
-    Write-Output "To:          $name"
+    Write-Host "Downloading: $uri"
+    Write-Host "To:          $outputFile"
     Invoke-WebRequest -Uri $uri -OutFile $outputFile
 }
 
@@ -41,9 +40,14 @@ function DownloadPackages
     }
 }
 
+function PackageDirectory($symbolFolder, $packageName, $version)
+{
+    return "$symbolFolder/packages/$packageName/$version"
+}
+
 function DownloadPackage($symbolFolder, $packageName, $version)
 {
-    $directory = "$symbolFolder/packages/$packageName/$version"
+    $directory = PackageDirectory $symbolFolder $packageName $version
     CreateDirectory $directory
     
     $zip      = "$directory/$packageName.zip" 
@@ -52,20 +56,19 @@ function DownloadPackage($symbolFolder, $packageName, $version)
     $uri = "https://www.nuget.org/api/v2/package/$packageName/$version"
     Download $uri $zip
     Unzip    $zip $unzipped
-
 }
 
-function GetVersion
+function GetHash($symbolFolder, $packageName, $version)
 {
-    $headers = dumpbin /headers .\Miruken\lib\net461\Miruken.dll
+    $packageDirectory = PackageDirectory $symbolFolder $packageName $version
+    $headers = dumpbin /headers "$packageDirectory/$packageName/lib/net461/$packageName.dll"
     $line = $headers -match '{'
     $line[0] -match '(?<={)(.*)(?=})'
     $guid = $matches[0]
     $guid = $guid.Replace("-", "")
     $line[0] -match '(?<=},)(.*)(?=,)'
     $build = $matches[0].Trim()
-    $version = "$($guid)$($build)"
-    $version
+    return "$guid$build"
 }
 
 function PdbDirectory($symbolFolder, $assemblyName, $version)
@@ -123,11 +126,10 @@ function Work(){
     $packageName  = "Miruken"
     $version      = "1.4.0.3"
     
-    $hash = DownloadPackage $symbolFolder $packageName $version 
-
-    $hash         = "42AF557992974F988C23152957E8DE781"
-    #DownloadPdb         $symbolFolder $packageName $hash
-    #DownloadSourceFiles $symbolFolder $packageName $hash
+    DownloadPackage $symbolFolder $packageName $version
+    $hash = (GetHash $symbolFolder $packageName $version)[-1]
+    DownloadPdb         $symbolFolder $packageName $hash
+    DownloadSourceFiles $symbolFolder $packageName $hash
 }
 
 Work
