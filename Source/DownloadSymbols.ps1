@@ -157,6 +157,10 @@ function GetSymbolsForPackages
     foreach($package in $packageList.GetEnumerator()){
         Write-Host "    $($package.Name) $($package.Value)"   
     }
+
+    foreach($package in $packageList.GetEnumerator()){
+        GetSymbols $package.Name $package.Value   
+    }
 }
 
 function GetSymbols
@@ -193,13 +197,13 @@ function Get-Symbols
     }
     else
     {
-        Write-Host "Invalid context:"
-        Write-Host "    Run in a directory that contains a packages.config file or"
-        Write-Host "    Provide a package name and version`r`n"
-        Write-Host "Get-Symbols <packageName> <version>"
+        Write-Warning ("`r`n`r`n"`
+            + "Usage:`r`n"`
+            + "    Run in a directory that contains a packages.config file or`r`n"`
+            + "    Get-Symbols <packageName> <version>`r`n")
     }
 }
 
-#Export-ModuleMember -function Get-Symbols
+Export-ModuleMember -function Get-Symbols
 
 Get-Symbols
