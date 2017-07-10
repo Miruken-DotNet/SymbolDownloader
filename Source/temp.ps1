@@ -8,32 +8,29 @@
     )
 
     $packageConfigs = @(Get-ChildItem -Path .\ -Recurse -Include packages.config)
-    Write-Host "`r`nFound $($packageConfigs.Count) packages.config files.`r`n"
+    Write-Host "`r`nFound $($packageConfigs.Count) [packages.config] files."
 
-    $packageList = New-Object System.Collections.ArrayList
+    $packageList = @{}
 
     foreach($packageConfig in $packageConfigs )
     {
+        Write-Host "    $($packageConfig.FullName)"
+
         [Xml]$xmlDocument = Get-Content $packageConfig
         foreach($package in $xmlDocument.packages.package)
         {
             if($package.id.ToLower().Contains($packageName.ToLower())){
-                $packageList.Add(@{id = $package.id; version = $package.version})
+                if(-Not $packageList.ContainsKey($package.id))
+                {
+                    $packageList.Add($package.id, $package.version)
+                }
             }
         }
     }
 
-    Write-Host "`r`nFound $($packageList.Count) packages matching [$packageName]`r`n"
-}
-
-
-function ReadPackage([xml]$xmlDocument, $packageName)
-{
-    foreach($package in $xmlDocument.packages.package)
-    {
-        if($package.id.ToLower().Contains($packageName.ToLower())){
-            Write-Host @{id = $package.id; version = $package.version}
-        }
+    Write-Host "`r`nFound $($packageList.Count) packages matching [$packageName]:"
+    foreach($package in $packageList.GetEnumerator()){
+        Write-Host "    $($package.Name) $($package.Value)"   
     }
 }
 
