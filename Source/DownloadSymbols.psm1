@@ -121,10 +121,16 @@ function DownloadSourceFile($symbolFolder, $filePath, $hash)
     Download $uri "$directory/$file"
 }
 
-function Get-Symbols($packageName, $version){
-    $symbolFolder = "C:/temp/symbols7"
-    $packageName  = "Miruken"
-    $version      = "1.4.0.3"
+function Get-Symbols
+{
+    Param(
+        [Parameter(Mandatory=$true)]
+        $packageName,
+        [Parameter(Mandatory=$true)]
+        $version
+    )
+
+    $symbolFolder = "C:/temp/symbols"
     
     DownloadPackage $symbolFolder $packageName $version
     $hash = (GetHash $symbolFolder $packageName $version)[-1]
