@@ -1,8 +1,26 @@
-﻿Add-Type -AssemblyName System.IO.Compression.FileSystem
+﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+function Get-Config
+{
+    return Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
+}
 
 function Unzip($zipFile, $unzipFile)
 {
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $unzipFile)
+}
+
+function Join-Parts
+{
+    param
+    (
+        $Parts = $null,
+        $Separator = '/'
+    )
+
+    ($Parts | ? { $_ } | % { ([string]$_).trim($Separator) } | ? { $_ } ) -join $Separator 
 }
 
 function Download($uri, $outputFile)
@@ -15,7 +33,8 @@ function Download($uri, $outputFile)
     }
     Catch
     {
-        Write-Warning "`r`nFailed to Download $outputFile`r`n"
+        Write-Warning ("`r`nFailed to Download: $uri`r`n"`
+            + "To: $outputFile`r`n")
     }
 }
 
@@ -60,10 +79,15 @@ function DownloadPackage($symbolFolder, $packageName, $version)
     $zip      = "$directory/$packageName.zip" 
     $unzipped = "$directory/$packageName" 
 
+    $Config = Get-Config
+
     if(-Not(Test-Path $zip))
     {
-        $uri = "https://www.nuget.org/api/v2/package/$packageName/$version"
-        Download $uri $zip
+        foreach($server in  $Config.nugetServers)
+        {
+            $uri = Join-Parts "$server","package/$packageName/$version"
+            Download $uri $zip
+        }
     }
     else
     {
@@ -83,20 +107,27 @@ function DownloadPackage($symbolFolder, $packageName, $version)
     }
 }
 
-function GetHash($symbolFolder, $packageName, $version)
-{
+function Get-DllPath($symbolFolder, $packageName, $version){
     $packageDirectory = PackageDirectory $symbolFolder $packageName $version
-    $dll = "$packageDirectory/$packageName/lib/net461/$packageName.dll"
+    return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
+}
 
-    if((Test-Path $dll))
+function Get-Hash()
+{
+    Param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        $dll
+    )
+
+    if(Test-Path $dll)
     {
-        $headers = dumpbin /headers $dll
-        $line = $headers -match '{'
-        $line[0] -match '(?<={)(.*)(?=})'
-        $guid = $matches[0]
-        $guid = $guid.Replace("-", "")
-        $line[0] -match '(?<=},)(.*)(?=,)'
-        $build = $matches[0].Trim()
+        $line  = (dumpbin /headers $dll | Select-String -Pattern '{').Line 
+
+        $guid  = (($line | Select-String -Pattern '(?<={)(.*)(?=})').Matches[0].Value) -replace "-",""
+        
+        $build = ($line | Select-String -Pattern '(?<=},)(.*)(?=,)').Matches[0].Value.Trim()
+
         return "$guid$build"
     }
     else
@@ -238,7 +269,7 @@ function GetSymbols
     Write-Host "`r`n**** Getting Symbols For $packageName $version ****`r`n"
 
     DownloadPackage $symbolFolder $packageName $version
-    $hash = (GetHash $symbolFolder $packageName $version)[-1]
+    $hash = (Get-Hash (Get-DllPath $symbolFolder $packageName $version))[-1]
     if($hash){
         DownloadPdb         $symbolFolder $packageName $hash
         DownloadSourceFiles $symbolFolder $packageName $hash
@@ -273,4 +304,6 @@ function Get-Symbols
 
 #Get-Symbols
 
-Get-Symbols Miruken.Castle 1.4.0.2
+#GetSymbolsForPackages "Miruken"
+
+#GetSymbols "Miruken" "1.4.1.4-prerelease"
