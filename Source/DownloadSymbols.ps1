@@ -1,11 +1,8 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
+. "$source\Get-Config"
+
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-function Get-Config
-{
-    return Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
-}
 
 function Unzip($zipFile, $unzipFile)
 {
@@ -299,11 +296,3 @@ function Get-Symbols
             + "    Get-Symbols <packageName> <version>`r`n")
     }
 }
-
-#Export-ModuleMember -function Get-Symbols
-
-#Get-Symbols
-
-#GetSymbolsForPackages "Miruken"
-
-#GetSymbols "Miruken" "1.4.1.4-prerelease"

@@ -2,20 +2,6 @@
 $test   = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\DownloadSymbols.ps1"
 
-Describe "Get-Config" {
-    It "Should have configured sourceFolder" {
-        (Get-Config).sourceFolder | Should not be $null
-    }
-
-    It "Should have configured nugetServers" {
-        (Get-Config).nugetServers.Count | Should be 2 
-    }
-
-    It "Should have configured symbolsServers" {
-        (Get-Config).symbolServers.Count | Should be 2 
-    }
-}
-
 Describe "Get-Hash" {
     It "Should return hash" {
         Get-Hash "$test/Miruken.dll" | Should Be "AC609D0195BE4EB3935B7C6BE0A6D2601"
