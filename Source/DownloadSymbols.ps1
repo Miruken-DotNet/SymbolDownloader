@@ -26,38 +26,31 @@ function Get-DllPath($packageName, $version){
     return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
 }
 
-function DownloadPackage($packageName, $version)
+function Get-NugetPackage($packageName, $version)
 {
     $directory = Get-PackageDirectory $packageName $version
     $zip       = "$directory/$packageName.zip" 
     $unzipped  = "$directory/$packageName" 
 
-    $Config = Get-Config
+    if((Test-Path $zip) -and (Test-Path $unzipped)) { return $true }
 
-    if(-Not(Test-Path $zip))
+    foreach($server in  (Get-Config).nugetServers)
     {
-        foreach($server in  $Config.nugetServers)
-        {
-            $uri = Join-Parts "$server","package/$packageName/$version"
-            Download-File $uri $zip
+        $uri = Join-Parts "$server","package/$packageName/$version"
+        if(Download-File $uri $zip) {
+            break
         }
     }
-    else
-    {
-        Write-Host "Existing $zip"                
-    }
+
 
     if((Test-Path $zip))
     {
-        if(-Not (Test-Path $unzipped))
-        {
-            Unzip $zip $unzipped
-        }
+        Unzip $zip $unzipped
+        return $true
     }
-    else
-    {
-        Write-Warning "`r`nCould not find zip file: $zip`r`n"                
-    }
+    
+    Write-Verbose "`r`nCould not find nuget package : $packageName $version`r`n"
+    return $false
 }
 
 function Get-Hash()
@@ -194,7 +187,7 @@ function GetSymbols
 
     Write-Host "`r`n**** Getting Symbols For $packageName $version ****`r`n"
 
-    DownloadPackage $packageName $version
+    Get-NugetPackage $packageName $version
     $hash = (Get-Hash (Get-DllPath $packageName $version))
     if($hash){
         DownloadPdb         $packageName $hash
