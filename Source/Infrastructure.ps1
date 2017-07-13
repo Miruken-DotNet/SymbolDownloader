@@ -14,6 +14,7 @@ function Join-Parts
     ($Parts | ? { $_ } | % { ([string]$_).trim($Separator) } | ? { $_ } ) -join $Separator 
 }
 
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Unzip($zipFile, $unzipFile)
 {
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $unzipFile)
@@ -24,6 +25,25 @@ function Create-Directory($directory)
     $directoryExists = Test-Path($directory) 
     if($directoryExists -ne $True)
     {
-        md -force $directory
+        md -force $directory | Out-Null
+    }
+}
+
+function Download-File($uri, $outputFile)
+{
+    Try
+    {
+        Write-Verbose "Downloading: $uri"
+        Write-Verbose "To:          $outputFile"
+ 
+        Create-Directory (Split-Path -Parent $outputFile)
+
+        Invoke-WebRequest -Uri $uri -OutFile $outputFile
+
+        return $true
+    }
+    Catch
+    {
+        return $false
     }
 }

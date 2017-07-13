@@ -1,12 +1,9 @@
 {
-
-	sourceFolder: "c:/temp/",
+	symbolFolder: "c:/temp/symbols",
 	nugetServers: [
-		"https://www.nuget.org/api/v2/",
-		"http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/"
+		"https://www.nuget.org/api/v2/"
 	],
 	symbolServers: [
-		"https://nuget.smbsrc.net",
-		"http://build.miruken.com/app/symbols"
+		"https://nuget.smbsrc.net"
 	]
 }

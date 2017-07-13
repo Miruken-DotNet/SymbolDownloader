@@ -1,21 +1,6 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\Infrastructure.ps1"
 
-function Download($uri, $outputFile)
-{
-    Try
-    {
-        Write-Host "Downloading: $uri"
-        Write-Host "To:          $outputFile"
-        Invoke-WebRequest -Uri $uri -OutFile $outputFile
-    }
-    Catch
-    {
-        Write-Warning ("`r`nFailed to Download: $uri`r`n"`
-            + "To: $outputFile`r`n")
-    }
-}
-
 function PackageDirectory($symbolFolder, $packageName, $version)
 {
     return "$symbolFolder/packages/$packageName/$version"
@@ -24,10 +9,8 @@ function PackageDirectory($symbolFolder, $packageName, $version)
 function DownloadPackage($symbolFolder, $packageName, $version)
 {
     $directory = PackageDirectory $symbolFolder $packageName $version
-    Create-Directory $directory
-    
-    $zip      = "$directory/$packageName.zip" 
-    $unzipped = "$directory/$packageName" 
+    $zip       = "$directory/$packageName.zip" 
+    $unzipped  = "$directory/$packageName" 
 
     $Config = Get-Config
 
@@ -36,7 +19,7 @@ function DownloadPackage($symbolFolder, $packageName, $version)
         foreach($server in  $Config.nugetServers)
         {
             $uri = Join-Parts "$server","package/$packageName/$version"
-            Download $uri $zip
+            Download-File $uri $zip
         }
     }
     else
@@ -104,15 +87,13 @@ function Pdb()
 
 function DownloadPdb($symbolFolder, $assemblyName, $version)
 {
-    Create-Directory(PdbDirectory $symbolFolder $assemblyName $version)
-
     $uri = "https://nuget.smbsrc.net/$assemblyName.pdb/$version/$assemblyName.pd_"
     $pd_ = Pd_ $symbolFolder $assemblyName $version
     $pdb = Pdb $symbolFolder $assemblyName $version
 
     if(-Not(Test-Path $pd_))
     {
-        Download $uri $pd_
+        Download-File $uri $pd_
     }
     else
     {
@@ -144,25 +125,22 @@ function DownloadSourceFiles($symbolFolder, $assemblyName, $version)
 
 function DownloadSourceFile($symbolFolder, $filePath, $hash)
 {
-    $file = Split-Path $filePath -leaf
-
+    $file      = Split-Path $filePath -leaf
+    
     $directory = "$symbolFolder/src/src/$file/$hash/"
-    Create-Directory $directory
-
-    $fileName = "$directory/$file"
+    
+    $fileName  = "$directory/$file"
 
     if(-Not (Test-Path $fileName))
     {
         $uri  = "https://nuget.smbsrc.net/src/$($file)/$($hash)/$($file)"
-        Download $uri $fileName
+        Download-File $uri $fileName
     }
     else
     {
         Write-Host "Existing $fileName"        
     }
 }
-
-
 
 function GetSymbolsForPackages
 {
@@ -219,7 +197,7 @@ function GetSymbols
     Write-Host "`r`n**** Getting Symbols For $packageName $version ****`r`n"
 
     DownloadPackage $symbolFolder $packageName $version
-    $hash = (Get-Hash (Get-DllPath $symbolFolder $packageName $version))[-1]
+    $hash = (Get-Hash (Get-DllPath $symbolFolder $packageName $version))
     if($hash){
         DownloadPdb         $symbolFolder $packageName $hash
         DownloadSourceFiles $symbolFolder $packageName $hash

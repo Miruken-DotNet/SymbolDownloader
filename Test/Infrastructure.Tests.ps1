@@ -4,15 +4,15 @@ $test   = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Describe "Get-Config" {
     It "Should have configured sourceFolder" {
-        (Get-Config).sourceFolder | Should not be $null
+        (Get-Config).symbolFolder | Should not be $null
     }
 
     It "Should have configured nugetServers" {
-        (Get-Config).nugetServers.Count | Should be 2 
+        (Get-Config).nugetServers.Count | Should BeGreaterThan 0 
     }
 
     It "Should have configured symbolsServers" {
-        (Get-Config).symbolServers.Count | Should be 2 
+        (Get-Config).symbolServers.Count | Should BeGreaterThan 0 
     }
 }
 
@@ -69,6 +69,29 @@ Describe "Create-Directory" {
     It "Should create nested directory" {
         $path = "$test\_temp\foo\bar\baz"
         Create-Directory $path
+        Test-Path $path | Should Be $true
+    }
+}
+
+Describe "Download-File" {
+    
+    BeforeEach {
+        $path = "$Test\_temp"
+        if(Test-Path $path){
+            Remove-Item -Force -Recurse $path
+        }
+    }
+    
+    It "Should return false when file does not exist" {
+        $uri  = "http://build.miruken.com/doesNotExist"
+        $path = "$test/_temp/file.txt"
+        Download-File $uri $path | Should Be $false
+    }
+
+    It "Should return true when file does exist" {
+        $uri  = "https://raw.githubusercontent.com/Miruken-DotNet/SymbolDownloader/master/README.rst"
+        $path = "$test/_temp/README.rst"
+        Download-File $uri $path | Should Be $true
         Test-Path $path | Should Be $true
     }
 }
