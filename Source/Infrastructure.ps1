@@ -36,7 +36,7 @@ function Download-File($uri, $outputFile)
         Write-Verbose "Downloading: $uri"
         Write-Verbose "To:          $outputFile"
  
-        Create-Directory (Split-Path -Parent $outputFile)
+        Create-Directory (Split-Path -Parent $outputFile) | Out-Null
 
         Invoke-WebRequest -Uri $uri -OutFile $outputFile
 

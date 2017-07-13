@@ -1,14 +1,34 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\Infrastructure.ps1"
 
-function PackageDirectory($symbolFolder, $packageName, $version)
+function Get-PackageDirectory($packageName, $version)
 {
-    return "$symbolFolder/packages/$packageName/$version"
+    return "$((Get-Config).symbolFolder)/packages/$packageName/$version"
 }
 
-function DownloadPackage($symbolFolder, $packageName, $version)
+function Get-PdbDirectory($assemblyName, $version)
 {
-    $directory = PackageDirectory $symbolFolder $packageName $version
+    return "$((Get-Config).symbolFolder)/$assemblyName.pdb/$version" 
+}
+
+function Get-Pd_($assemblyName, $version)
+{
+    return "$(Get-PdbDirectory $assemblyName $version)/$assemblyName.pd_" 
+}
+
+function Get-Pdb($assemblyName, $version)
+{
+    return "$(Get-PdbDirectory $assemblyName $version)/$assemblyName.pdb" 
+}
+
+function Get-DllPath($packageName, $version){
+    $packageDirectory = Get-PackageDirectory $packageName $version
+    return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
+}
+
+function DownloadPackage($packageName, $version)
+{
+    $directory = Get-PackageDirectory $packageName $version
     $zip       = "$directory/$packageName.zip" 
     $unzipped  = "$directory/$packageName" 
 
@@ -40,11 +60,6 @@ function DownloadPackage($symbolFolder, $packageName, $version)
     }
 }
 
-function Get-DllPath($symbolFolder, $packageName, $version){
-    $packageDirectory = PackageDirectory $symbolFolder $packageName $version
-    return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
-}
-
 function Get-Hash()
 {
     Param(
@@ -70,26 +85,11 @@ function Get-Hash()
     }
 }
 
-function PdbDirectory($symbolFolder, $assemblyName, $version)
-{
-    return "$symbolFolder/$assemblyName.pdb/$version" 
-}
-
-function Pd_($symbolFolder, $assemblyName, $version)
-{
-    return "$(PdbDirectory $symbolFolder $assemblyName $version)/$assemblyName.pd_" 
-}
-
-function Pdb()
-{
-    return "$(PdbDirectory $symbolFolder $assemblyName $version)/$assemblyName.pdb" 
-}
-
-function DownloadPdb($symbolFolder, $assemblyName, $version)
+function DownloadPdb($assemblyName, $version)
 {
     $uri = "https://nuget.smbsrc.net/$assemblyName.pdb/$version/$assemblyName.pd_"
-    $pd_ = Pd_ $symbolFolder $assemblyName $version
-    $pdb = Pdb $symbolFolder $assemblyName $version
+    $pd_ = Pd_ $assemblyName $version
+    $pdb = Pdb $assemblyName $version
 
     if(-Not(Test-Path $pd_))
     {
@@ -110,24 +110,24 @@ function DownloadPdb($symbolFolder, $assemblyName, $version)
     }
 }
 
-function DownloadSourceFiles($symbolFolder, $assemblyName, $version)
+function DownloadSourceFiles($assemblyName, $version)
 {
-    $pdb = Pdb $symbolFolder $assemblyName $version
+    $pdb = Pdb $assemblyName $version
 
     $srcsrv = pdbstr -r -p:$pdb -s:srcsrv
     $files = $srcsrv | where{$_ -like '*.cs*'}
 
     foreach($file in $files.GetEnumerator()){
         $parts = $file.Split("*")   
-        DownloadSourceFile $symbolFolder $parts[0] $parts[1]
+        DownloadSourceFile $parts[0] $parts[1]
     }
 }
 
-function DownloadSourceFile($symbolFolder, $filePath, $hash)
+function DownloadSourceFile($filePath, $hash)
 {
     $file      = Split-Path $filePath -leaf
     
-    $directory = "$symbolFolder/src/src/$file/$hash/"
+    $directory = "$((Get-Config).symbolFolder)/src/src/$file/$hash/"
     
     $fileName  = "$directory/$file"
 
@@ -192,15 +192,13 @@ function GetSymbols
         $version
     )
 
-    $symbolFolder = "C:/temp/symbols"
-    
     Write-Host "`r`n**** Getting Symbols For $packageName $version ****`r`n"
 
-    DownloadPackage $symbolFolder $packageName $version
-    $hash = (Get-Hash (Get-DllPath $symbolFolder $packageName $version))
+    DownloadPackage $packageName $version
+    $hash = (Get-Hash (Get-DllPath $packageName $version))
     if($hash){
-        DownloadPdb         $symbolFolder $packageName $hash
-        DownloadSourceFiles $symbolFolder $packageName $hash
+        DownloadPdb         $packageName $hash
+        DownloadSourceFiles $packageName $hash
     }
 }
 
