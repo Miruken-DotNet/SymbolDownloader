@@ -8,28 +8,3 @@ Describe "Get-Hash" {
     }
 }
 
-Describe "Join-Parts" {
-    It "Should add missing /" {
-        Join-Parts "a","b" | Should Be "a/b"
-    }
-
-    It "Should not duplicate / from left" {
-        Join-Parts "a/","b" | Should Be "a/b"
-    }
-
-    It "Should not duplicate / from right" {
-        Join-Parts "a","/b" | Should Be "a/b"
-    }
-
-    It "Should not duplicate / from both" {
-        Join-Parts "a/","/b" | Should Be "a/b"
-    }
-
-    It "Should specify specific seperator" {
-        Join-Parts "a","b" "," | Should Be "a,b"
-    }
-
-    It "should not duplicate specific seperator" {
-        Join-Parts "a,",",b" "," | Should Be "a,b"
-    }
-}

@@ -1,24 +1,5 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
-. "$source\Get-Config"
-
-
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-function Unzip($zipFile, $unzipFile)
-{
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $unzipFile)
-}
-
-function Join-Parts
-{
-    param
-    (
-        $Parts = $null,
-        $Separator = '/'
-    )
-
-    ($Parts | ? { $_ } | % { ([string]$_).trim($Separator) } | ? { $_ } ) -join $Separator 
-}
+. "$source\Infrastructure.ps1"
 
 function Download($uri, $outputFile)
 {
@@ -35,34 +16,6 @@ function Download($uri, $outputFile)
     }
 }
 
-function CreateDirectory($directory)
-{
-    $directoryExists = Test-Path($directory) 
-    if($directoryExists -ne $True)
-    {
-        md -force $directory
-    }
-}
-
-#function DownloadPackages
-#{
-#    $uri = "https://www.nuget.org/api/v2/Search()?$orderby=Id&$skip=0&$top=30&searchTerm='Miruken'&targetFramework=''"
-#    $response = Invoke-RestMethod -Uri $uri -Method GET
-#
-#    $sources = $response.content.src
-#
-#    foreach($package in $response.GetEnumerator()){
-#        $uri  = $package.content.src
-#        $name = $package.title.InnerText
-#        $zip  = "$($package.title.InnerText).zip"
-#
-#        Write-Host "Dowloading $url"
-#        Write-Host "To $name"
-#
-#        Invoke-WebRequest -Uri $uri -OutFile $name
-#    }
-#}
-
 function PackageDirectory($symbolFolder, $packageName, $version)
 {
     return "$symbolFolder/packages/$packageName/$version"
@@ -71,7 +24,7 @@ function PackageDirectory($symbolFolder, $packageName, $version)
 function DownloadPackage($symbolFolder, $packageName, $version)
 {
     $directory = PackageDirectory $symbolFolder $packageName $version
-    CreateDirectory $directory
+    Create-Directory $directory
     
     $zip      = "$directory/$packageName.zip" 
     $unzipped = "$directory/$packageName" 
@@ -151,7 +104,7 @@ function Pdb()
 
 function DownloadPdb($symbolFolder, $assemblyName, $version)
 {
-    CreateDirectory(PdbDirectory $symbolFolder $assemblyName $version)
+    Create-Directory(PdbDirectory $symbolFolder $assemblyName $version)
 
     $uri = "https://nuget.smbsrc.net/$assemblyName.pdb/$version/$assemblyName.pd_"
     $pd_ = Pd_ $symbolFolder $assemblyName $version
@@ -194,7 +147,7 @@ function DownloadSourceFile($symbolFolder, $filePath, $hash)
     $file = Split-Path $filePath -leaf
 
     $directory = "$symbolFolder/src/src/$file/$hash/"
-    CreateDirectory $directory
+    Create-Directory $directory
 
     $fileName = "$directory/$file"
 
