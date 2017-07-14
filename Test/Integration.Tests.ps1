@@ -4,7 +4,7 @@ $test   = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $tags     = @("Integration")
 $nuget    = "https://www.nuget.org/api/v2/"
-$teamCity = ""
+$teamCity = "http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/"
 
 $config = @{
     symbolFolder = "c:\temp\_testSymbols"
@@ -17,24 +17,7 @@ function CleanUp {
     }
 }
 
-Describe -Tag ($tags) "Get-NugetPackage that exists from a single NugetServer" {
-    
-    BeforeEach {
-        Cleanup
-    }
-
-    Mock Get-Config { 
-        $config.nugetServers = $nuget
-        return $config
-    }
-    
-    It "Should download package" {
-        Get-NugetPackage "Miruken" "1.4.0.3" | Should Be $true
-        Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
-    }
-}
-
-Describe -Tag($tags) "Get-NugetPackage that does not exist from a single NugetServer" {
+Describe -Tag ($tags) "Get-PackageMetaData from team city" {
     
     BeforeEach {
         Cleanup
@@ -45,7 +28,85 @@ Describe -Tag($tags) "Get-NugetPackage that does not exist from a single NugetSe
         return $config
     }
     
-    It "Should download package" {
+    It "Should download package and return true" {
+        $name    = "Miruken"
+        $version = "1.4.1.7-prerelease"
+
+        $data = Get-PackageMetaData $name $version
+        $data.version | Should Be $version
+        $data.name    | Should Be $name
+        $data.zipUri  | Should Not Be $null
+    }
+}
+
+Describe -Tag ($tags) "Get-PackageMetaData from nuget" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = $nuget
+        return $config
+    }
+    
+    It "Should download package and return true" {
+        $name    = "Miruken"
+        $version = "1.4.0.3"
+
+        $data = Get-PackageMetaData $name $version
+        $data.version | Should Be $version
+        $data.name    | Should Be $name
+        $data.zipUri  | Should Not Be $null
+    }
+}
+
+Describe -Tag ($tags) "Get-NugetPackage that exists on nuget" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = $nuget
+        return $config
+    }
+    
+    It "Should download package and return true" {
+        Get-NugetPackage "Miruken" "1.4.0.3" | Should Be $true
+        Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
+    }
+}
+
+Describe -Tag ($tags) "Get-NugetPackage that exists on TeamCity" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = $teamCity
+        return $config
+    }
+    
+    It "Should download package and return true" {
+        Get-NugetPackage "Miruken" "1.4.1.7-prerelease" | Should Be $true
+        Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
+    }
+}
+
+Describe -Tag($tags) "Get-NugetPackage that does not exist on NugetServer" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = $teamCity
+        return $config
+    }
+    
+    It "Should return false" {
         Get-NugetPackage "Miruken" "1.4.0.3" | Should Be $false
         Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
     }
@@ -62,7 +123,7 @@ Describe -Tag ($tags) "Get-NugetPackage that exists on last of many NugetServers
         return $config
     }
     
-    It "Should download package" {
+    It "Should download package and return true" {
         Get-NugetPackage "Miruken" "1.4.0.3" | Should Be $true
         Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
     }
@@ -79,7 +140,7 @@ Describe -Tag ($tags) "Get-NugetPackage that exists on first of many NugetServer
         return $config
     }
     
-    It "Should download package" {
+    It "Should download package and return true" {
         Get-NugetPackage "Miruken" "1.4.0.3" | Should Be $true
         Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
     }

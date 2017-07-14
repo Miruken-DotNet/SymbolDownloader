@@ -34,5 +34,9 @@ Describe "Get-Hash" {
     It "Should return hash" {
         Get-Hash "$test/Miruken.dll" | Should Be "AC609D0195BE4EB3935B7C6BE0A6D2601"
     }
+
+    It "Should throw exception" {
+        { Get-Hash "$test/Foo.dll" } | Should Throw "Could not find dll"
+    }
 }
 

@@ -1,6 +1,8 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\Infrastructure.ps1"
 
+#http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/Search()?$filter=IsAbsoluteLatestVersion&searchTerm='miruken'&targetFramework='net46'&includePrerelease=true&$skip=0&$top=26
+
 function Get-PackageDirectory($packageName, $version)
 {
     return "$((Get-Config).symbolFolder)/packages/$packageName/$version"
@@ -26,6 +28,33 @@ function Get-DllPath($packageName, $version){
     return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
 }
 
+function Get-PackageMetaData($packageName, $version){
+    foreach($server in  (Get-Config).nugetServers)
+    {
+        try
+        {
+            $uri = Join-Parts "$server","Packages(Id='$packageName',Version='$version')"
+            $package = (Invoke-RestMethod -Method Get -Uri $uri).entry
+
+            if($package){
+                $data = @{
+                    name    = $package.properties.id
+                    version = $package.properties.version
+                    zipUri  = $package.content.src
+                }
+                return $data
+            }
+            Write-Verbose "Package does not exist $packageName $version at $uri"
+        }
+        catch
+        {
+            #we will throw later if we don't find it
+        }
+    }
+    
+    throw "Package does not exist $packageName $version"
+}
+
 function Get-NugetPackage($packageName, $version)
 {
     $directory = Get-PackageDirectory $packageName $version
@@ -36,12 +65,17 @@ function Get-NugetPackage($packageName, $version)
 
     foreach($server in  (Get-Config).nugetServers)
     {
-        $uri = Join-Parts "$server","package/$packageName/$version"
-        if(Download-File $uri $zip) {
-            break
+        try
+        {
+            $packageData = Get-PackageMetaData $packageName $version
+            if(Download-File $packageData.zipUri $zip) {
+                break
+            }
+        }
+        catch
+        {
         }
     }
-
 
     if((Test-Path $zip))
     {
@@ -61,21 +95,17 @@ function Get-Hash()
         $dll
     )
 
-    if(Test-Path $dll)
-    {
-        $line  = (dumpbin /headers $dll | Select-String -Pattern '{').Line 
+    if(-not (Test-Path $dll)) {
+        throw "Could not find dll: $dll"
+    }
 
-        $guid  = (($line | Select-String -Pattern '(?<={)(.*)(?=})').Matches[0].Value) -replace "-",""
+    $line  = (dumpbin /headers $dll | Select-String -Pattern '{').Line 
+
+    $guid  = (($line | Select-String -Pattern '(?<={)(.*)(?=})').Matches[0].Value) -replace "-",""
         
-        $build = ($line | Select-String -Pattern '(?<=},)(.*)(?=,)').Matches[0].Value.Trim()
+    $build = ($line | Select-String -Pattern '(?<=},)(.*)(?=,)').Matches[0].Value.Trim()
 
-        return "$guid$build"
-    }
-    else
-    {
-        Write-Warning "`r`nCould not find dll: $dll`r`n"                        
-        return ""
-    }
+    return "$guid$build"
 }
 
 function DownloadPdb($assemblyName, $version)
@@ -187,7 +217,11 @@ function GetSymbols
 
     Write-Host "`r`n**** Getting Symbols For $packageName $version ****`r`n"
 
-    Get-NugetPackage $packageName $version
+    if(-not(Get-NugetPackage $packageName $version)){
+        Write-Warning "Could not find: $packageName $version"
+        return
+    }
+
     $hash = (Get-Hash (Get-DllPath $packageName $version))
     if($hash){
         DownloadPdb         $packageName $hash
