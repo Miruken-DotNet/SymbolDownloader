@@ -7,7 +7,7 @@ $nuget    = "https://www.nuget.org/api/v2/"
 $teamCity = "http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/"
 
 $config = @{
-    symbolFolder = "c:\temp\_testSymbols"
+    symbolFolder = "$test\_temp"
     nugetServers = $nuget,$teamCity
 } 
 
@@ -143,5 +143,55 @@ Describe -Tag ($tags) "Get-NugetPackage that exists on first of many NugetServer
     It "Should download package and return true" {
         Get-NugetPackage "Miruken" "1.4.0.3" | Should Be $true
         Test-Path "$($config.symbolFolder)/packages/miruken/1.4.0.3/Miruken.zip"
+    }
+}
+
+Describe -Tag ($tags) "Get-Symbols from team city that do not exist" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = @($teamCity)
+        return $config
+    }
+    
+    It "Should get symbols and sourc files" {
+        Get-Symbols "Miruken" "1.4.0.3" | Should Be $false
+    }
+}
+
+Describe -Tag ($tags + "target") "Get-Symbols from team city that do exist" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = @($teamCity)
+        return $config
+    }
+    
+    It "Should get symbols and sourc files" {
+        Get-Symbols "Miruken" "1.4.1.7-prerelease" | Should Be $true
+        (Get-ChildItem -Recurse -Path "$($config.symbolFolder)/src" -Include *.cs).Count | Should BeGreaterThan 1
+    }
+}
+
+Describe -Tag ($tags) "Get-Symbols from nuget" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers = @($nuget)
+        return $config
+    }
+    
+    It "Should get symbols and source files" {
+        Get-Symbols "Miruken" "1.4.0.3" | Should Be $true
+        (Get-ChildItem -Recurse -Path "$($config.symbolFolder)/src" -Include *.cs).Count | Should BeGreaterThan 1
     }
 }

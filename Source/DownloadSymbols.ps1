@@ -116,7 +116,7 @@ function DownloadPdb($assemblyName, $version)
 
     if(-Not(Test-Path $pd_))
     {
-        Download-File $uri $pd_
+        Download-File $uri $pd_ | Out-Null
     }
     else
     {
@@ -125,7 +125,7 @@ function DownloadPdb($assemblyName, $version)
 
     if(-Not(Test-Path $pdb))
     {
-        expand $pd_ $pdb
+        expand $pd_ $pdb | Out-Null
     }
     else
     {
@@ -138,11 +138,28 @@ function DownloadSourceFiles($assemblyName, $version)
     $pdb = Pdb $assemblyName $version
 
     $srcsrv = pdbstr -r -p:$pdb -s:srcsrv
+
+    $uriTemplate = ($srcsrv | Select-String -Pattern SRCSRVTRG).Line.Split("=")[1].Replace("(%var1%)","")
+
     $files = $srcsrv | where{$_ -like '*.cs*'}
+    
 
     foreach($file in $files.GetEnumerator()){
-        $parts = $file.Split("*")   
-        DownloadSourceFile $parts[0] $parts[1]
+        $parts         = $file.Split("*")  
+        $buildFilePath = $parts[0] 
+        $hash      = $parts[1]
+        $fileName  = Split-Path $buildFilePath -leaf
+        $uri       = $uriTemplate.Replace("%fnfile%",$fileName).Replace("%var2%",$hash) 
+        $directory = "$((Get-Config).symbolFolder)/src/src/$fileName/$hash/"
+        $downloadFileName  = Join-Parts "$directory","$fileName"
+        if(-Not (Test-Path $downloadFileName))
+        {
+            Download-File $uri $downloadFileName | Out-Null
+        }
+        else
+        {
+            Write-Verbose "Existing $fileName"        
+        }
     }
 }
 
@@ -150,12 +167,10 @@ function DownloadSourceFile($filePath, $hash)
 {
     $file      = Split-Path $filePath -leaf
     
-    $directory = "$((Get-Config).symbolFolder)/src/src/$file/$hash/"
-    
-    $fileName  = "$directory/$file"
 
     if(-Not (Test-Path $fileName))
     {
+        throw "need to build the uri from info in the pdb file"
         $uri  = "https://nuget.smbsrc.net/src/$($file)/$($hash)/$($file)"
         Download-File $uri $fileName
     }
@@ -165,7 +180,7 @@ function DownloadSourceFile($filePath, $hash)
     }
 }
 
-function GetSymbolsForPackages
+function Get-SymbolsByPackages
 {
     Param(
         [String]
@@ -206,7 +221,7 @@ function GetSymbolsForPackages
     }
 }
 
-function GetSymbols
+function Get-SymbolsByNameAndVersion
 {
     Param(
         [Parameter(Mandatory=$true)]
@@ -218,15 +233,20 @@ function GetSymbols
     Write-Host "`r`n**** Getting Symbols For $packageName $version ****`r`n"
 
     if(-not(Get-NugetPackage $packageName $version)){
-        Write-Warning "Could not find: $packageName $version"
-        return
+        Write-Warning "Could not find nuget package: $packageName $version"
+        return $false
     }
 
     $hash = (Get-Hash (Get-DllPath $packageName $version))
-    if($hash){
-        DownloadPdb         $packageName $hash
-        DownloadSourceFiles $packageName $hash
+    if(-not $hash){
+        Write-Warning "Could not get hash from dll: $packageName $version"
+        return $false
     }
+    
+    DownloadPdb         $packageName $hash
+    DownloadSourceFiles $packageName $hash
+
+    return $true
 }
 
 function Get-Symbols
@@ -238,11 +258,11 @@ function Get-Symbols
 
     if($PSBoundParameters.ContainsKey('packageName') -or $PSBoundParameters.ContainsKey('version'))
     {
-        GetSymbols $packageName $version
+        return Get-SymbolsByNameAndVersion $packageName $version
     }
     elseif(@(Get-ChildItem -Path .\ -Recurse -Include packages.config).Count -gt 0)
     {
-        GetSymbolsForPackages
+        return Get-SymbolsByPackages
     }
     else
     {
