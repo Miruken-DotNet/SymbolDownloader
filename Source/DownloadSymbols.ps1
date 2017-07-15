@@ -8,19 +8,19 @@ function Get-PackageDirectory($packageName, $version)
     return "$((Get-Config).symbolFolder)/packages/$packageName/$version"
 }
 
-function Get-PdbDirectory($assemblyName, $version)
+function Get-PdbDirectory($assemblyName, $hash)
 {
-    return "$((Get-Config).symbolFolder)/$assemblyName.pdb/$version" 
+    return "$((Get-Config).symbolFolder)/$assemblyName.pdb/$hash" 
 }
 
-function Get-Pd_($assemblyName, $version)
+function Get-Pd_Path($assemblyName, $hash)
 {
-    return "$(Get-PdbDirectory $assemblyName $version)/$assemblyName.pd_" 
+    return "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName.pd_" 
 }
 
-function Get-Pdb($assemblyName, $version)
+function Get-PdbPath($assemblyName, $version)
 {
-    return "$(Get-PdbDirectory $assemblyName $version)/$assemblyName.pdb" 
+    return "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName.pdb" 
 }
 
 function Get-DllPath($packageName, $version){
@@ -108,34 +108,48 @@ function Get-Hash()
     return "$guid$build"
 }
 
-function DownloadPdb($assemblyName, $version)
+function Get-Pdb($assemblyName, $hash)
 {
-    $uri = "https://nuget.smbsrc.net/$assemblyName.pdb/$version/$assemblyName.pd_"
-    $pd_ = Pd_ $assemblyName $version
-    $pdb = Pdb $assemblyName $version
+    $pd_ = Get-Pd_Path $assemblyName $hash
+    $pdb = Get-PdbPath $assemblyName $hash
 
-    if(-Not(Test-Path $pd_))
+    if(Test-Path $pdb){ return true }
+
+    $fileTypes = ".pd_",".pdb"
+    
+    $found = $false
+    foreach($symbolServer in ((Get-Config).symbolServers))
     {
-        Download-File $uri $pd_ | Out-Null
-    }
-    else
-    {
-        Write-Host "Existing $pd_"                
+        foreach($fileType in $fileTypes)
+        {
+            if(-not $found)
+            {
+                $uri  = Join-Parts $symbolServer,"$assemblyName.pdb/$hash/$assemblyName$fileType"
+                $path = "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName$fileType" 
+
+                if(Download-File $uri $path)
+                {
+                   $found = $true
+                }
+            }
+        }
     }
 
-    if(-Not(Test-Path $pdb))
+    if(Test-Path $pdb){ return $true }
+
+
+    if(Test-Path $pd_)
     {
         expand $pd_ $pdb | Out-Null
+        return $true
     }
-    else
-    {
-        Write-Host "Existing $pdb"        
-    }
+
+    return $false
 }
 
 function DownloadSourceFiles($assemblyName, $version)
 {
-    $pdb = Pdb $assemblyName $version
+    $pdb = Get-PdbDirectory $assemblyName $version
 
     $srcsrv = pdbstr -r -p:$pdb -s:srcsrv
 
@@ -243,7 +257,12 @@ function Get-SymbolsByNameAndVersion
         return $false
     }
     
-    DownloadPdb         $packageName $hash
+    if(-not(Get-Pdb $packageName $hash))
+    {
+        Write-Warning "Could not get Pdb file: $packageName $version"
+        return $false
+    }
+
     DownloadSourceFiles $packageName $hash
 
     return $true
