@@ -222,7 +222,7 @@ function Get-SymbolsByPackages
     Write-Host
 
     foreach($package in $packageList.GetEnumerator()){
-        Get-SymbolsByNameAndVersion $package.Name $package.Value   
+        Get-SymbolsByNameAndVersion $package.Name $package.Value | Out-Null
     }
 }
 
