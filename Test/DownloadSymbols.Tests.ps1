@@ -16,16 +16,16 @@ Describe "Get-PdbDirectory" {
     }
 }
 
-Describe "Get-Pd_" {
+Describe "Get-Pd_Path" {
     It "Should build file path" {
-        Get-Pd_ "miruken" "1.2.3.4" | 
+        Get-Pd_Path "miruken" "1.2.3.4" | 
             Should Be "c:/temp/symbols/miruken.pdb/1.2.3.4/miruken.pd_"
     }
 }
 
-Describe "Get-Pdb" {
+Describe "Get-PdbPath" {
     It "Should build file path" {
-        Get-Pdb "miruken" "1.2.3.4" | 
+        Get-PdbPath "miruken" "1.2.3.4" | 
             Should Be "c:/temp/symbols/miruken.pdb/1.2.3.4/miruken.pdb"
     }
 }

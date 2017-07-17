@@ -18,7 +18,7 @@ function Get-Pd_Path($assemblyName, $hash)
     return "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName.pd_" 
 }
 
-function Get-PdbPath($assemblyName, $version)
+function Get-PdbPath($assemblyName, $hash)
 {
     return "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName.pdb" 
 }
@@ -147,25 +147,33 @@ function Get-Pdb($assemblyName, $hash)
     return $false
 }
 
-function DownloadSourceFiles($assemblyName, $version)
+function DownloadSourceFiles($assemblyName, $hash)
 {
-    $pdb = Get-PdbDirectory $assemblyName $version
+    $pdb = Get-PdbPath $assemblyName $hash
 
     $srcsrv = pdbstr -r -p:$pdb -s:srcsrv
 
-    $uriTemplate = ($srcsrv | Select-String -Pattern SRCSRVTRG).Line.Split("=")[1].Replace("(%var1%)","")
+    $srcsrvtrg = $srcsrv | Select-String -Pattern SRCSRVTRG
+    if($srcsrvtrg.Line.Contains("%HTTP_EXTRACT_TARGET%"))
+    {
+        $httpAlias = ($srcsrv | Select-String -Pattern HTTP_ALIAS)[0].Line.Split("=")[1]
+        $uriTemplate = Join-Parts $httpAlias,"%var2%"
+    }
+    else
+    {
+        $uriTemplate = ($srcsrv | Select-String -Pattern SRCSRVTRG).Line.Split("=")[1].Replace("(%var1%)","")
+    }
 
-    $files = $srcsrv | where{$_ -like '*.cs*'}
-    
+    $files      = $srcsrv | where{$_ -like '*.cs*'}
 
     foreach($file in $files.GetEnumerator()){
         $parts         = $file.Split("*")  
         $buildFilePath = $parts[0] 
         $hash      = $parts[1]
         $fileName  = Split-Path $buildFilePath -leaf
-        $uri       = $uriTemplate.Replace("%fnfile%",$fileName).Replace("%var2%",$hash) 
-        $directory = "$((Get-Config).symbolFolder)/src/src/$fileName/$hash/"
-        $downloadFileName  = Join-Parts "$directory","$fileName"
+        $uri       = $uriTemplate.Replace("%fnfile%",$fileName).Replace("%var2%",$hash)
+        $uniquePath = ([System.Uri]$uri).AbsolutePath
+        $downloadFileName = Join-Parts (Get-Config).symbolFolder,"src",$uniquePath
         if(-Not (Test-Path $downloadFileName))
         {
             Download-File $uri $downloadFileName | Out-Null
@@ -174,23 +182,6 @@ function DownloadSourceFiles($assemblyName, $version)
         {
             Write-Verbose "Existing $fileName"        
         }
-    }
-}
-
-function DownloadSourceFile($filePath, $hash)
-{
-    $file      = Split-Path $filePath -leaf
-    
-
-    if(-Not (Test-Path $fileName))
-    {
-        throw "need to build the uri from info in the pdb file"
-        $uri  = "https://nuget.smbsrc.net/src/$($file)/$($hash)/$($file)"
-        Download-File $uri $fileName
-    }
-    else
-    {
-        Write-Host "Existing $fileName"        
     }
 }
 

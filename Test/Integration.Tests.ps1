@@ -223,6 +223,7 @@ Describe -Tag ($tags) "Get-Symbols from team city that do not exist" {
 
     Mock Get-Config { 
         $config.nugetServers = @($teamCity)
+        $config.symbolServers = @($teamCitySymbols)
         return $config
     }
     
@@ -231,7 +232,7 @@ Describe -Tag ($tags) "Get-Symbols from team city that do not exist" {
     }
 }
 
-Describe -Tag ($tags + "target") "Get-Symbols from team city that do exist" {
+Describe -Tag ($tags) "Get-Symbols from team city that do exist" {
     
     BeforeEach {
         Cleanup
@@ -239,6 +240,7 @@ Describe -Tag ($tags + "target") "Get-Symbols from team city that do exist" {
 
     Mock Get-Config { 
         $config.nugetServers = @($teamCity)
+        $config.symbolServers = @($teamCitySymbols)
         return $config
     }
     
@@ -248,14 +250,15 @@ Describe -Tag ($tags + "target") "Get-Symbols from team city that do exist" {
     }
 }
 
-Describe -Tag ($tags) "Get-Symbols from nuget" {
+Describe -Tag ($tags) "Get-Symbols from nuget that do exist" {
     
     BeforeEach {
         Cleanup
     }
 
     Mock Get-Config { 
-        $config.nugetServers = @($nuget)
+        $config.nugetServers  = @($nuget)
+        $config.symbolServers = @($nugetSymbols)
         return $config
     }
     
