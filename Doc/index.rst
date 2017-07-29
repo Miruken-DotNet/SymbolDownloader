@@ -11,3 +11,4 @@ Miruken handle()'s your application!
 
    article/en-US/about.rst
    article/en-US/install.rst
+   article/en-US/usage.rst
