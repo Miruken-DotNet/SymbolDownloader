@@ -4,16 +4,24 @@ Install
 
 Powershell modules are installed by copying the powershell files into a known directory that is on the PSModulePath environment variable.  I like to use:
 
+.. code-block:: console
+
 	C:\Users\<USER_NAME>\Documents\WindowsPowerShell\Modules
 
 Make sure that folder is in the PSModulePath variable.
 
 Install the module straight from git by:
 
-	cd C:\Users\Michael\Documents\WindowsPowerShell\Modules
+.. code-block:: console
+
+	cd C:\Users\<USER_NAME>\Documents\WindowsPowerShell\Modules
 	git clone https://github.com/Miruken-DotNet/SymbolDownloader.git	
 
-Now open a powershell window in a solution or project directory. Then import the SymbolDownloader module:
+Now open a powershell window in a solution or project directory. 
+You should be able to just use the module since it is in a known module folder.
+Older versions of powershell would force you to import the module explicitly:
+
+.. code-block:: powershell
 
 	Import-Module SymbolDownloader
 	
