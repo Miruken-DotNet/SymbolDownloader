@@ -7,6 +7,7 @@ Once the SymbolDownloader Powershell Module is installed you should be able to u
 Download a single package
 -------------------------
 
+.. code-block
 	get-symbols miruken 1.4.0.3
 
 You must provide the package name, and the version number.  This can be done from the commandline any directory.
