@@ -113,7 +113,7 @@ function Get-Pdb($assemblyName, $hash)
     $pd_ = Get-Pd_Path $assemblyName $hash
     $pdb = Get-PdbPath $assemblyName $hash
 
-    if(Test-Path $pdb){ return true }
+    if(Test-Path $pdb){ return $true }
 
     $fileTypes = ".pd_",".pdb"
     

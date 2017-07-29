@@ -267,3 +267,22 @@ Describe -Tag ($tags) "Get-Symbols from nuget that do exist" {
         (Get-ChildItem -Recurse -Path "$($config.symbolFolder)/src" -Include *.cs).Count | Should BeGreaterThan 1
     }
 }
+
+Describe -Tag ($tags) "Get-Symbols again" {
+    
+    BeforeEach {
+        Cleanup
+    }
+
+    Mock Get-Config { 
+        $config.nugetServers  = @($teamCity,$nuget)
+        $config.symbolServers = @($teamCitySymbols,$nugetSymbols)
+        return $config
+    }
+    
+    It "Should get symbols and source files" {
+        Get-Symbols "Miruken" "1.4.0.3" | Should Be $true
+        Get-Symbols "Miruken" "1.4.0.3" | Should Be $true
+        (Get-ChildItem -Recurse -Path "$($config.symbolFolder)/src" -Include *.cs).Count | Should BeGreaterThan 1
+    }
+}
