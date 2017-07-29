@@ -2,8 +2,7 @@
 Symbol Downloader
 #################
 
-Downloads symbols and source files for debuging.
+  `Full Documentaion <http://miruken-dotnet-symboldownloader.readthedocs.io>`_
 
-Download symbols and source files for a nuget package:
+Downloads symbols and all source files for a nuget package.
 
-	Get-Symbols <PackageName> <Version>
