@@ -8,7 +8,7 @@ Powershell modules are installed by copying the powershell files into a known di
 
 	C:\Users\<USER_NAME>\Documents\WindowsPowerShell\Modules
 
-Make sure that folder is in the PSModulePath variable.
+Make sure the above directory is in the PSModulePath environment variable.
 
 Install the module straight from git by:
 
