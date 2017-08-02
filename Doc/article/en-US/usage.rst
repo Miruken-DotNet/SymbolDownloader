@@ -13,6 +13,9 @@ Download a single package
 
 You must provide the package name, and the version number.  This can be done from the commandline in any directory.
 
+.. important:: 
+	Package names are case sensitive.
+
 Download symbols in a solution
 ------------------------------
 
