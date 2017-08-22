@@ -266,9 +266,13 @@ function Get-Symbols
         $version
     )
 
-    if($PSBoundParameters.ContainsKey('packageName') -or $PSBoundParameters.ContainsKey('version'))
+    if($PSBoundParameters.ContainsKey('packageName') -and $PSBoundParameters.ContainsKey('version'))
     {
         return Get-SymbolsByNameAndVersion $packageName $version
+    }
+    elseif(($PSBoundParameters.ContainsKey('packageName')) -and (@(Get-ChildItem -Path .\ -Recurse -Include packages.config).Count -gt 0))
+    {
+        return Get-SymbolsByPackages $packageName
     }
     elseif(@(Get-ChildItem -Path .\ -Recurse -Include packages.config).Count -gt 0)
     {
