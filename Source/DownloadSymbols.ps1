@@ -3,32 +3,64 @@
 
 #http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/Search()?$filter=IsAbsoluteLatestVersion&searchTerm='miruken'&targetFramework='net46'&includePrerelease=true&$skip=0&$top=26
 
-function Get-PackageDirectory($packageName, $version)
+function Get-PackageDirectory
 {
+    [cmdletbinding()]
+    Param(
+        $packageName, 
+        $version
+    )
+
     return "$((Get-Config).symbolFolder)/packages/$packageName/$version"
 }
 
-function Get-PdbDirectory($assemblyName, $hash)
+function Get-PdbDirectory
 {
+    [cmdletbinding()]
+    Param(
+        $assemblyName, 
+        $hash
+    )
     return "$((Get-Config).symbolFolder)/$assemblyName.pdb/$hash" 
 }
 
-function Get-Pd_Path($assemblyName, $hash)
+function Get-Pd_Path
 {
+    [cmdletbinding()]
+    Param(
+        $assemblyName, 
+        $hash
+    )
     return "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName.pd_" 
 }
 
-function Get-PdbPath($assemblyName, $hash)
+function Get-PdbPath()
 {
+    [cmdletbinding()]
+    Param(
+        $assemblyName, 
+        $hash
+    )
     return "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName.pdb" 
 }
 
-function Get-DllPath($packageName, $version){
+function Get-DllPath(){
+
+    [cmdletbinding()]
+    Param(
+        $packageName,
+        $version
+    )
     $packageDirectory = Get-PackageDirectory $packageName $version
     return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
 }
 
-function Get-PackageMetaData($packageName, $version){
+function Get-PackageMetaData {
+    [cmdletbinding()]
+    Param(
+        $packageName,
+        $version
+    )
     foreach($server in  (Get-Config).nugetServers)
     {
         try
@@ -55,13 +87,22 @@ function Get-PackageMetaData($packageName, $version){
     throw "Package does not exist $packageName $version"
 }
 
-function Get-NugetPackage($packageName, $version)
+function Get-NugetPackage
 {
+    [cmdletbinding()]
+    Param(
+        $packageName,
+        $version
+    )
+
     $directory = Get-PackageDirectory $packageName $version
     $zip       = "$directory/$packageName.zip" 
     $unzipped  = "$directory/$packageName" 
 
-    if((Test-Path $zip) -and (Test-Path $unzipped)) { return $true }
+    if((Test-Path $zip) -and (Test-Path $unzipped)) { 
+        Write-Verbose "Existing nuget package: $unzipped"
+        return $true 
+    }
 
     foreach($server in  (Get-Config).nugetServers)
     {
@@ -89,6 +130,7 @@ function Get-NugetPackage($packageName, $version)
 
 function Get-Hash()
 {
+    [cmdletbinding()]
     Param(
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
@@ -108,12 +150,21 @@ function Get-Hash()
     return "$guid$build"
 }
 
-function Get-Pdb($assemblyName, $hash)
+function Get-Pdb()
 {
+    [cmdletbinding()]
+    Param(
+        $assemblyName, 
+        $hash
+    )
+
     $pd_ = Get-Pd_Path $assemblyName $hash
     $pdb = Get-PdbPath $assemblyName $hash
 
-    if(Test-Path $pdb){ return $true }
+    if(Test-Path $pdb){ 
+        Write-Verbose "Existing pdb: $pdb"
+        return $true 
+    }
 
     $fileTypes = ".pd_",".pdb"
     
@@ -140,6 +191,8 @@ function Get-Pdb($assemblyName, $hash)
 
     if(Test-Path $pd_)
     {
+        Write-Verbose "Expanding $pd_"
+
         . "$source/lib/expand.exe" $pd_ $pdb | Out-Null
         return $true
     }
@@ -147,8 +200,14 @@ function Get-Pdb($assemblyName, $hash)
     return $false
 }
 
-function DownloadSourceFiles($assemblyName, $hash)
+function DownloadSourceFiles
 {
+    [cmdletbinding()]
+    Param(
+        $assemblyName, 
+        $hash
+    )
+
     $pdb = Get-PdbPath $assemblyName $hash
 
     $srcsrv = . "$source/lib/pdbstr.exe" -r -p:$pdb -s:srcsrv
@@ -180,13 +239,14 @@ function DownloadSourceFiles($assemblyName, $hash)
         }
         else
         {
-            Write-Verbose "Existing $fileName"        
+            Write-Verbose "Existing file: $fileName"        
         }
     }
 }
 
 function Get-SymbolsByPackages
 {
+    [cmdletbinding()]
     Param(
         [String]
         [Parameter(Mandatory=$true)]
@@ -228,6 +288,7 @@ function Get-SymbolsByPackages
 
 function Get-SymbolsByNameAndVersion
 {
+    [cmdletbinding()]
     Param(
         [Parameter(Mandatory=$true)]
         $packageName,
@@ -261,6 +322,7 @@ function Get-SymbolsByNameAndVersion
 
 function Get-Symbols
 {
+    [cmdletbinding()]
     Param(
         $packageName,
         $version

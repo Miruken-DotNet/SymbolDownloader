@@ -29,8 +29,14 @@ function Create-Directory($directory)
     }
 }
 
-function Download-File($uri, $outputFile)
+function Download-File
 {
+    [cmdletbinding()]
+    Param(
+        $uri,
+        $outputFile
+    )
+
     Try
     {
         Write-Verbose "Downloading: $uri"
@@ -40,10 +46,12 @@ function Download-File($uri, $outputFile)
 
         Invoke-WebRequest -Uri $uri -OutFile $outputFile
 
+        Write-Verbose "Download: Succeeded"
         return $true
     }
     Catch
     {
+        Write-Verbose "Download: Failed"
         return $false
     }
 }
