@@ -99,7 +99,7 @@ function Get-Hash()
         throw "Could not find dll: $dll"
     }
 
-    $line  = (dumpbin /headers $dll | Select-String -Pattern '{').Line 
+    $line  = (. "$source/lib/dumpbin/dumpbin.exe" /headers $dll | Select-String -Pattern '{').Line 
 
     $guid  = (($line | Select-String -Pattern '(?<={)(.*)(?=})').Matches[0].Value) -replace "-",""
         
@@ -140,7 +140,7 @@ function Get-Pdb($assemblyName, $hash)
 
     if(Test-Path $pd_)
     {
-        expand $pd_ $pdb | Out-Null
+        . "$source/lib/expand.exe" $pd_ $pdb | Out-Null
         return $true
     }
 
@@ -151,7 +151,7 @@ function DownloadSourceFiles($assemblyName, $hash)
 {
     $pdb = Get-PdbPath $assemblyName $hash
 
-    $srcsrv = pdbstr -r -p:$pdb -s:srcsrv
+    $srcsrv = . "$source/lib/pdbstr.exe" -r -p:$pdb -s:srcsrv
 
     $srcsrvtrg = $srcsrv | Select-String -Pattern SRCSRVTRG
     if($srcsrvtrg.Line.Contains("%HTTP_EXTRACT_TARGET%"))

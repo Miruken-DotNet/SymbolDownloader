@@ -9,9 +9,12 @@ Download a single package
 
 .. code-block:: powershell
 	
-	get-symbols miruken 1.4.0.3
+	get-symbols Miruken 1.4.0.3
 
 You must provide the package name, and the version number.  This can be done from the commandline in any directory.
+
+.. important:: 
+	Package names are case sensitive.
 
 Download symbols in a solution
 ------------------------------
