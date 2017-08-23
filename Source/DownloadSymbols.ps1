@@ -223,7 +223,10 @@ function DownloadSourceFiles
         $uriTemplate = ($srcsrv | Select-String -Pattern SRCSRVTRG).Line.Split("=")[1].Replace("(%var1%)","")
     }
 
-    $files      = $srcsrv | where{$_ -like '*.cs*'}
+    $files = @($srcsrv | where{$_ -like '*.cs*'})
+    if($files.Length -lt 1){
+        Write-Warning "No source files referenced in $pdb"
+    }
 
     foreach($file in $files.GetEnumerator()){
         $parts         = $file.Split("*")  
