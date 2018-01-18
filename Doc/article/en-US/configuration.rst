@@ -2,31 +2,20 @@
 Configuration
 =============
 
-Powershell modules are installed by copying the powershell files into a known directory that is on the PSModulePath environment variable.  I like to use:
+You can configure SymbolDownloader to look for symbols on specific servers 
+by changing :code:`Source/config.json`.  Here we are looking on the public
+nuget servers and mirukens own nuget server.  You can add your own servers
+to the list.
 
 .. code-block:: console
-
-	C:\Users\<USER_NAME>\Documents\WindowsPowerShell\Modules
-
-Make sure the above directory is in the PSModulePath environment variable. You can read that variable using powershell:
-
-.. code-block:: console
-
-	Get-ChildItem Env:\PSModulePath
-
-Install the module straight from git by:
-
-.. code-block:: console
-
-	cd C:\Users\<USER_NAME>\Documents\WindowsPowerShell\Modules
-	git clone https://github.com/Miruken-DotNet/SymbolDownloader.git	
-
-Now open a powershell window in a solution or project directory. 
-You should be able to just use the module since it is in a known module folder.
-Older versions of powershell would force you to import the module explicitly:
-
-.. code-block:: powershell
-
-	Import-Module SymbolDownloader
-	
-SymbolDownloader is now ready to use.	
+	{
+		symbolFolder: "c:/temp/symbols",
+		nugetServers: [
+			"https://www.nuget.org/api/v2/",
+	        "http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/",
+		],
+		symbolServers: [
+			"https://nuget.smbsrc.net",
+	        "http://build.miruken.com/app/symbols",
+		]
+	}
