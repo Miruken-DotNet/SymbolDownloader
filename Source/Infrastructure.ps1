@@ -44,7 +44,14 @@ function Download-File
  
         Create-Directory (Split-Path -Parent $outputFile) | Out-Null
 
-        Invoke-WebRequest -Uri $uri -OutFile $outputFile
+        $response = Invoke-WebRequest -MaximumRedirection 0 -Uri $uri
+
+        if($response.StatusCode -eq 200){
+            $response.Content | Set-Content -Encoding Byte -path $outputFile
+        } else {
+            Write-Verbose "Download: Failed"
+            return $false
+        }
 
         Write-Verbose "Download: Succeeded"
         return $true
