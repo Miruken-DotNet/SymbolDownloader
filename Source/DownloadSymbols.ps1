@@ -121,6 +121,7 @@ function Get-NugetPackage
     if((Test-Path $zip))
     {
         Unzip $zip $unzipped
+        Write-Host "Downloaded Nuget Package $packageName $version"
         return $true
     }
     
@@ -166,16 +167,24 @@ function Get-Pdb()
         return $true 
     }
 
-    $fileTypes = ".pd_",".pdb"
-    
     $found = $false
     foreach($symbolServer in ((Get-Config).symbolServers))
     {
-        foreach($fileType in $fileTypes)
+        if(-not $found)
         {
-            if(-not $found)
-            {
-                $uri  = Join-Parts $symbolServer,"$assemblyName.pdb/$hash/$assemblyName$fileType"
+            if($symbolServer.compressedPdb -eq $True){
+                $fileType = ".pd_"
+                $uri  = Join-Parts $symbolServer.uri,"$assemblyName.pdb/$hash/$assemblyName$fileType"
+                $path = "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName$fileType" 
+
+                if(Download-File $uri $path)
+                {
+                   $found = $true
+                }
+            }
+            if($symbolServer.compressedPdb -eq $False){
+                $fileType = ".pdb"
+                $uri  = Join-Parts $symbolServer.uri,"$assemblyName.pdb/$hash/$assemblyName$fileType"
                 $path = "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName$fileType" 
 
                 if(Download-File $uri $path)
@@ -186,7 +195,10 @@ function Get-Pdb()
         }
     }
 
-    if(Test-Path $pdb){ return $true }
+    if(Test-Path $pdb){
+        Write-Host "Downloaded $assemblyName.pdb" 
+        return $true 
+    }
 
 
     if(Test-Path $pd_)
@@ -194,6 +206,8 @@ function Get-Pdb()
         Write-Verbose "Expanding $pd_"
 
         . "$source/lib/expand.exe" $pd_ $pdb | Out-Null
+
+        Write-Host "Downloaded $assemblyName.pdb" 
         return $true
     }
 
@@ -245,6 +259,7 @@ function DownloadSourceFiles
             Write-Verbose "Existing file: $fileName"        
         }
     }
+    Write-Host "Downloaded $($files.Length) source files"
 }
 
 function Get-SymbolsByPackages

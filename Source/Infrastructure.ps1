@@ -34,7 +34,8 @@ function Download-File
     [cmdletbinding()]
     Param(
         $uri,
-        $outputFile
+        $outputFile,
+        $followRedirects=$True
     )
 
     Try
@@ -44,12 +45,13 @@ function Download-File
  
         Create-Directory (Split-Path -Parent $outputFile) | Out-Null
 
-        $response = Invoke-WebRequest -MaximumRedirection 0 -Uri $uri
+        $redirects = if ($followRedirects) {5} else {0}
+        $response = Invoke-WebRequest -MaximumRedirection $redirects -Uri $uri
 
         if($response.StatusCode -eq 200){
             $response.Content | Set-Content -Encoding Byte -path $outputFile
         } else {
-            Write-Verbose "Download: Failed"
+            Write-Verbose "Download: Non 200 response"
             return $false
         }
 

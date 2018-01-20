@@ -5,7 +5,15 @@
         "http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/"
 	],
 	symbolServers: [
-		"https://nuget.smbsrc.net",
-        "http://build.miruken.com/app/symbols"
+		{
+            uri:             "https://nuget.smbsrc.net",
+            compressedPdb:   true,
+            followRedirects: true
+        },
+        {   
+            uri:             "http://build.miruken.com/app/symbols",
+            compressedPdb:   false,
+            followRedirects: false
+        }
 	]
 }
