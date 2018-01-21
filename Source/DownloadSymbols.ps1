@@ -51,8 +51,18 @@ function Get-DllPath(){
         $packageName,
         $version
     )
+
     $packageDirectory = Get-PackageDirectory $packageName $version
-    return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
+    $filter           = "$packageName.dll"
+
+    $dlls = @(Get-ChildItem $packageDirectory -Include *.dll -Filter $filter -Recurse)
+
+    if($dlls.Length -gt 0){
+        return $dlls[0].FullName
+    } else {
+        $packageDirectory = Get-PackageDirectory $packageName $version
+        return "$packageDirectory/$packageName/lib/net461/$packageName.dll"
+    }
 }
 
 function Get-PackageMetaData {
