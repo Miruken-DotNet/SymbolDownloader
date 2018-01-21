@@ -21,3 +21,4 @@ To solve these problem, SymbolDownloader downloads .pdb, .pd_ files,  and all as
    article/en-US/install.rst
    article/en-US/usage.rst
    article/en-US/configuration.rst
+   article/en-US/teamCity.rst
