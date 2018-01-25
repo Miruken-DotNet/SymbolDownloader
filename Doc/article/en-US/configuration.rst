@@ -8,6 +8,7 @@ nuget servers and mirukens own nuget server.  You can add your own servers
 to the list.
 
 .. code-block:: console
+
 	{
 		symbolFolder: "c:/temp/symbols",
 		nugetServers: [
