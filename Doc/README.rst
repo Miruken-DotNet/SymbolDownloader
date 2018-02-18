@@ -1,6 +1,6 @@
-=============
-Miruken Docs
-=============
+=====================
+SymbolDownloader Docs
+=====================
 
   View the docs `here <http://miruken-dotnet-miruken.readthedocs.io/>`_
 
