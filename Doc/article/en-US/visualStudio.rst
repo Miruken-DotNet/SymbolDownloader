@@ -15,6 +15,8 @@ Tools > Options > Debugging > General
     check   "Supress JIT optimization on module load"
 
 Tools > Options > Debugging > Symbols
+
+    Add "https://nuget.smbsrc.net" to the "Symbol file (.pdb) locations:" list
     
     Set "Cache Symbols in this directory" to c:\temp\symbols    
 
