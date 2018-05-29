@@ -46,7 +46,7 @@ function Download-File
         Create-Directory (Split-Path -Parent $outputFile) | Out-Null
 
         $redirects = if ($followRedirects) {5} else {0}
-        $response = Invoke-WebRequest -MaximumRedirection $redirects -Uri $uri
+        $response = Invoke-WebRequest -MaximumRedirection $redirects -Uri $uri -UseBasicParsing
 
         if($response.StatusCode -eq 200){
             $response.Content | Set-Content -Encoding Byte -path $outputFile
