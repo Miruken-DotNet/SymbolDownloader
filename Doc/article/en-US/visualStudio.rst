@@ -9,16 +9,20 @@ Tools > Options > Debugging > General
     Uncheck "Enable Just My Code"
 
     Check   "Enable Source Server Support"
+    
     Check   "Print source server diagnostics to the Output window"
+    
     Check   "Allow source server for partial trust assemblies"
+    
     Check   "Always run untrusted source server command without prompting"
-    check   "Supress JIT optimization on module load"
+    
+    Check   "Supress JIT optimization on module load"
 
 Tools > Options > Debugging > Symbols
 
     Add "https://nuget.smbsrc.net" to the "Symbol file (.pdb) locations:" list
     
-    Set "Cache Symbols in this directory" to c:\temp\symbols    
+    Set "Cache Symbols in this directory" to c:\\temp\\symbols    
 
     Select "Load only specified modules" option
 
