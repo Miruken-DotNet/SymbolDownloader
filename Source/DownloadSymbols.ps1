@@ -236,6 +236,12 @@ function DownloadSourceFiles
 
     $srcsrv = . "$source/lib/pdbstr.exe" -r -p:$pdb -s:srcsrv
 
+    if(!$srcsrv)
+    {
+        Write-Warning "Pdb is missing symbol server meta data 'srcsrv' $pdb"
+        return
+    }
+
     $srcsrvtrg = $srcsrv | Select-String -Pattern SRCSRVTRG
     if($srcsrvtrg.Line.Contains("%HTTP_EXTRACT_TARGET%"))
     {
