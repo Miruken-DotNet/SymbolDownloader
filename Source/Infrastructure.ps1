@@ -60,7 +60,7 @@ function Download-File
     }
     Catch
     {
-        Write-Verbose "Download: Failed"
+        Write-Verbose "Download: Failed $($_.Exception)"
         return $false
     }
 }
