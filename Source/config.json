@@ -1,19 +1,31 @@
 {
 	symbolFolder: "c:/temp/symbols",
 	nugetServers: [
-		"https://www.nuget.org/api/v2/",
-        "http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/"
+        {
+            enabled: true,
+            name:    "nuget",
+            uri:     "https://www.nuget.org/api/v2/" 
+        },
+        {
+            enabled: true,
+            name:    "miruken",
+            uri:     "http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/" 
+        }
 	],
 	symbolServers: [
 		{
-            uri:             "https://nuget.smbsrc.net",
-            compressedPdb:   true,
-            followRedirects: true
+            enabled:                true,
+            name:                   "nuget",
+            uri:                    "https://nuget.smbsrc.net",
+            compressedPdb:          true,
+            requiresAuthentication: false
         },
         {   
-            uri:             "http://build.miruken.com/app/symbols",
-            compressedPdb:   false,
-            followRedirects: false
+            enabled:                true,
+            name:                   "miruken",
+            uri:                    "http://build.miruken.com/app/symbols",
+            compressedPdb:          false,
+            requiresAuthentication: true
         }
 	]
 }

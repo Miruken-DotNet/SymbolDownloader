@@ -1,7 +1,19 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\Infrastructure.ps1"
 
-#http://build.miruken.com/guestAuth/app/nuget/v1/FeedService.svc/Search()?$filter=IsAbsoluteLatestVersion&searchTerm='miruken'&targetFramework='net46'&includePrerelease=true&$skip=0&$top=26
+$config = Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
+foreach($server in ($config.symbolServers | ? {$_.enabled -eq $true}))
+{
+    $username = $null
+    $password = $null
+    if($server.requiresAuthentication){
+        $username = Read-Host -Prompt "Username for [$($server.name)]"
+        $password = Read-Host -Prompt "Password for [$($server.name)]" -AsSecureString
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
+    }
+    Add-Member -InputObject $server -MemberType NoteProperty -Name username -Value $username
+    Add-Member -InputObject $server -MemberType NoteProperty -Name password -Value $password
+}
 
 function Get-PackageDirectory
 {
@@ -11,7 +23,7 @@ function Get-PackageDirectory
         $version
     )
 
-    return "$((Get-Config).symbolFolder)/packages/$packageName/$version"
+    return "$($config.symbolFolder)/packages/$packageName/$version"
 }
 
 function Get-PdbDirectory
@@ -21,7 +33,7 @@ function Get-PdbDirectory
         $assemblyName, 
         $hash
     )
-    return "$((Get-Config).symbolFolder)/$assemblyName.pdb/$hash" 
+    return "$($config.symbolFolder)/$assemblyName.pdb/$hash" 
 }
 
 function Get-Pd_Path
@@ -71,11 +83,11 @@ function Get-PackageMetaData {
         $packageName,
         $version
     )
-    foreach($server in  (Get-Config).nugetServers)
+    foreach($server in ($config.nugetServers | ? {$_.enabled -eq $true}))
     {
         try
         {
-            $uri = Join-Parts "$server","Packages(Id='$packageName',Version='$version')"
+            $uri = Join-Parts $server.uri,"Packages(Id='$packageName',Version='$version')"
             $package = (Invoke-RestMethod -Method Get -Uri $uri).entry
 
             if($package){
@@ -114,18 +126,13 @@ function Get-NugetPackage
         return $true 
     }
 
-    foreach($server in  (Get-Config).nugetServers)
+    try
     {
-        try
-        {
-            $packageData = Get-PackageMetaData $packageName $version
-            if(Download-File $packageData.zipUri $zip) {
-                break
-            }
-        }
-        catch
-        {
-        }
+        $packageData = Get-PackageMetaData $packageName $version
+        Download-File $packageData.zipUri $zip
+    }
+    catch
+    {
     }
 
     if((Test-Path $zip))
@@ -178,7 +185,7 @@ function Get-Pdb()
     }
 
     $found = $false
-    foreach($symbolServer in ((Get-Config).symbolServers))
+    foreach($symbolServer in ($config.symbolServers | ? {$_.enabled -eq $true}))
     {
         if(-not $found)
         {
@@ -187,7 +194,7 @@ function Get-Pdb()
                 $uri  = Join-Parts $symbolServer.uri,"$assemblyName.pdb/$hash/$assemblyName$fileType"
                 $path = "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName$fileType" 
 
-                if(Download-File $uri $path)
+                if((Download-File $uri $path $symbolServer.username $symbolServer.password) -eq $true)
                 {
                    $found = $true
                 }
@@ -197,7 +204,7 @@ function Get-Pdb()
                 $uri  = Join-Parts $symbolServer.uri,"$assemblyName.pdb/$hash/$assemblyName$fileType"
                 $path = "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName$fileType" 
 
-                if(Download-File $uri $path)
+                if((Download-File $uri $path) -eq $true)
                 {
                    $found = $true
                 }
@@ -242,6 +249,7 @@ function DownloadSourceFiles
         return
     }
 
+    #Can make this better/easier/more exact by using "srctool mypdb.pdb" to build the uri
     $srcsrvtrg = $srcsrv | Select-String -Pattern SRCSRVTRG
     if($srcsrvtrg.Line.Contains("%HTTP_EXTRACT_TARGET%"))
     {
@@ -265,7 +273,7 @@ function DownloadSourceFiles
         $fileName  = Split-Path $buildFilePath -leaf
         $uri       = $uriTemplate.Replace("%fnfile%",$fileName).Replace("%var2%",$hash)
         $uniquePath = ([System.Uri]$uri).AbsolutePath
-        $downloadFileName = Join-Parts (Get-Config).symbolFolder,"src",$uniquePath
+        $downloadFileName = Join-Parts $config.symbolFolder,"src",$uniquePath
         if(-Not (Test-Path $downloadFileName))
         {
             Download-File $uri $downloadFileName | Out-Null
@@ -382,3 +390,4 @@ function Get-Symbols
             + "    Get-Symbols <packageName> <version>`r`n")
     }
 }
+

@@ -1,9 +1,4 @@
-﻿function Get-Config
-{
-    return Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
-}
-
-function Join-Parts
+﻿function Join-Parts
 {
     param
     (
@@ -35,7 +30,8 @@ function Download-File
     Param(
         $uri,
         $outputFile,
-        $followRedirects=$True
+        $username,
+        $password
     )
 
     Try
@@ -45,8 +41,17 @@ function Download-File
  
         Create-Directory (Split-Path -Parent $outputFile) | Out-Null
 
-        $redirects = if ($followRedirects) {5} else {0}
-        $response = Invoke-WebRequest -MaximumRedirection $redirects -Uri $uri -UseBasicParsing
+        $headers
+        if($username -and $password){
+            $pair = "$($username):$($password)"
+            $encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
+            $basicAuthValue = "Basic $encodedCreds"
+            $headers = @{
+                Authorization = $basicAuthValue
+            }
+        }
+
+        $response = Invoke-WebRequest -Uri $uri -Headers $headers -UseBasicParsing
 
         if($response.StatusCode -eq 200){
             $response.Content | Set-Content -Encoding Byte -path $outputFile
