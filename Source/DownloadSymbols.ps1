@@ -192,7 +192,7 @@ function Get-Pdb()
                 $uri  = Join-Parts $symbolServer.uri,"$assemblyName.pdb/$hash/$assemblyName$fileType"
                 $path = "$(Get-PdbDirectory $assemblyName $hash)/$assemblyName$fileType" 
 
-                if((Download-File $uri $path) -eq $true)
+                if((Download-File $uri $path $symbolServer.username $symbolServer.password) -eq $true)
                 {
                    $found = $true
                 }
