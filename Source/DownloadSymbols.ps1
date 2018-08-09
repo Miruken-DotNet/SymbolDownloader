@@ -1,19 +1,7 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\Infrastructure.ps1"
 
-$config = Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
-foreach($server in ($config.symbolServers | ? {$_.enabled -eq $true}))
-{
-    $username = $null
-    $password = $null
-    if($server.requiresAuthentication){
-        $username = Read-Host -Prompt "Username for [$($server.name)]"
-        $password = Read-Host -Prompt "Password for [$($server.name)]" -AsSecureString
-        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
-    }
-    Add-Member -InputObject $server -MemberType NoteProperty -Name username -Value $username
-    Add-Member -InputObject $server -MemberType NoteProperty -Name password -Value $password
-}
+$script:config = $null;
 
 function Get-PackageDirectory
 {
@@ -362,6 +350,23 @@ function Get-SymbolsByNameAndVersion
     return $true
 }
 
+function Configure
+{
+    $script:config = Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
+    foreach($server in ($script:config.symbolServers | ? {$_.enabled -eq $true}))
+    {
+        $username = $null
+        $password = $null
+        if($server.requiresAuthentication){
+            $username = Read-Host -Prompt "Username for [$($server.name)]"
+            $password = Read-Host -Prompt "Password for [$($server.name)]" -AsSecureString
+            $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
+        }
+        Add-Member -InputObject $server -MemberType NoteProperty -Name username -Value $username
+        Add-Member -InputObject $server -MemberType NoteProperty -Name password -Value $password
+    }
+}
+
 function Get-Symbols
 {
     [cmdletbinding()]
@@ -369,6 +374,8 @@ function Get-Symbols
         $packageName,
         $version
     )
+
+    Configure 
 
     if($PSBoundParameters.ContainsKey('packageName') -and $PSBoundParameters.ContainsKey('version'))
     {
@@ -390,4 +397,3 @@ function Get-Symbols
             + "    Get-Symbols <packageName> <version>`r`n")
     }
 }
-
