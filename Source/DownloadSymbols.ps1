@@ -1,5 +1,6 @@
 ﻿$source = Split-Path -Parent $MyInvocation.MyCommand.Path
 . "$source\Infrastructure.ps1"
+. "$source\Authentication.ps1"
 
 $script:config = $null;
 
@@ -352,15 +353,21 @@ function Get-SymbolsByNameAndVersion
 
 function Configure
 {
+    [cmdletbinding()]
+    Param(
+        $promptForCredentials
+    )
+
     $script:config = Get-Content "$source/config.json" | Out-String | ConvertFrom-Json
-    foreach($server in ($script:config.symbolServers | ? {$_.enabled -eq $true}))
+    $credentials   = Get-Credentials $script:config.symbolServers -promptForCredentials:$promptForCredentials
+    foreach($server in $script:config.symbolServers  | ? {$_.enabled -eq $true})
     {
         $username = $null
         $password = $null
         if($server.requiresAuthentication){
-            $username = Read-Host -Prompt "Username for [$($server.name)]"
-            $password = Read-Host -Prompt "Password for [$($server.name)]" -AsSecureString
-            $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
+            $selected = $credentials | ? {$_.key -eq $server.name}
+            $username = $selected.username
+            $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($selected.password))
         }
         Add-Member -InputObject $server -MemberType NoteProperty -Name username -Value $username
         Add-Member -InputObject $server -MemberType NoteProperty -Name password -Value $password
@@ -372,22 +379,24 @@ function Get-Symbols
     [cmdletbinding()]
     Param(
         $packageName,
-        $version
+        $version,
+        [switch]
+        $promptForCredentials
     )
 
-    Configure 
+    Configure -promptForCredentials:$promptForCredentials
 
     if($PSBoundParameters.ContainsKey('packageName') -and $PSBoundParameters.ContainsKey('version'))
     {
-        return Get-SymbolsByNameAndVersion $packageName $version
+        Get-SymbolsByNameAndVersion $packageName $version | Out-Null
     }
     elseif(($PSBoundParameters.ContainsKey('packageName')) -and (@(Get-ChildItem -Path .\ -Recurse -Include packages.config).Count -gt 0))
     {
-        return Get-SymbolsByPackages $packageName
+        Get-SymbolsByPackages $packageName | Out-Null
     }
     elseif(@(Get-ChildItem -Path .\ -Recurse -Include packages.config).Count -gt 0)
     {
-        return Get-SymbolsByPackages
+        Get-SymbolsByPackages | Out-Null
     }
     else
     {
